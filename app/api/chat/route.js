@@ -16,7 +16,7 @@ export async function POST(req) {
       },
       ...data,
     ],
-    model: "openai/gpt-3.5-turbo",
+    model: "gpt-3.5-turbo"
   });
   return new NextResponse(completion.choices[0].message.content);
 }
