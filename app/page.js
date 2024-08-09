@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Box, Stack, TextField, Button } from "@mui/material";
+import { Box, Stack, TextField, Button, Typography } from "@mui/material";
 
 export default function Home() {
   const [messages, setMessages] = useState([
@@ -58,14 +58,30 @@ export default function Home() {
       flexDirection="column"
       justifyContent="center"
       alignItems="center"
+      bgcolor="black"
     >
+      <Typography
+      variant="h4"
+      color="white"
+      mb={4}
+      fontWeight="bold"
+      textAlign="center" 
+      sx={{
+        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)', 
+      }}
+    >
+      Welcome to our Latest Chatbot!
+    </Typography>
+
       <Stack
         direction="column"
-        width="600px"
-        height="700px"
-        border="1px solid black"
+        width="500px"
+        height="600px"
+        border="5px solid gray"
         p={2}
         spacing={3}
+        bgcolor="white"
+        borderRadius={8}
       >
         <Stack
           direction="column"
@@ -85,8 +101,8 @@ export default function Home() {
               <Box
                 bgcolor={
                   message.role === "assistant"
-                    ? "primary.main"
-                    : "secondary.main"
+                    ? "darkblue"
+                    : "gray"
                 }
                 color="white"
                 borderRadius={16}
@@ -105,7 +121,14 @@ export default function Home() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
-        <Button variant="contained" onClick={sendMessage}>
+        <Button variant="contained" onClick={sendMessage}
+        sx={{
+          bgcolor: 'mediumseagreen', 
+          color: 'white', 
+          '&:hover': {
+            bgcolor: 'seagreen',  
+          },
+        }}>
           SEND
         </Button>
       </Stack>
