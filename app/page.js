@@ -11,52 +11,57 @@ export default function Home() {
   ]);
 
   const [message, setMessage] = useState("");
-  const messagesEndRef = useRef(null);
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const sendMessage = async () => {
-    if (!message.trim()) return; // Prevent sending empty messages
-    setMessage("");
-    setMessages((prevMessages) => [
-      ...prevMessages,
+    setMessages((messages) => [
+      ...messages,
       { role: "user", content: message },
       { role: "assistant", content: "" },
     ]);
+    setMessage("");
 
-    const response = await fetch("api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify([...messages, { role: "user", content: message }]),
-    });
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    let result = "";
-    reader.read().then(function processText({ done, value }) {
-      if (done) {
-        return;
-      }
-      const text = decoder.decode(value || new Uint8Array(), { stream: true });
-      setMessages((prevMessages) => {
-        let lastMessage = prevMessages[prevMessages.length - 1];
-        let otherMessages = prevMessages.slice(0, prevMessages.length - 1);
-        return [
-          ...otherMessages,
-          {
-            ...lastMessage,
-            content: lastMessage.content + text,
-          },
-        ];
+    try {
+      const response = await fetch("api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([...messages, { role: "user", content: message }]),
       });
-    });
-  };
 
-  // Scroll to the bottom of the chat on new message
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let result = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        result += decoder.decode(value || new Uint8Array());
+        setMessages((messages) => {
+          const lastMessage = messages[messages.length - 1];
+          const otherMessages = messages.slice(0, messages.length - 1);
+          return [
+            ...otherMessages,
+            {
+              ...lastMessage,
+              content: lastMessage.content + result,
+            },
+          ];
+        });
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
 
   return (
     <Box
@@ -66,28 +71,31 @@ export default function Home() {
       flexDirection="column"
       justifyContent="center"
       alignItems="center"
-      bgcolor="#f0f0f0"  // Light background color
+      bgcolor="#f4f4f9"
     >
       <Typography
         variant="h4"
-        color="#333"  // Darker text color
+        color="#333"
         mb={4}
         fontWeight="bold"
         textAlign="center"
+        sx={{
+          textShadow: '1px 1px 2px rgba(0, 0, 0, 0.1)',
+        }}
       >
         Welcome to our Latest Chatbot!
       </Typography>
 
       <Stack
         direction="column"
-        width="500px"
+        width="400px"
         height="600px"
-        border="1px solid #ddd"  // Lighter border color
+        border="1px solid #ddd"
         p={2}
-        spacing={3}
-        bgcolor="white"
-        borderRadius={4}  // Less rounded corners
-        boxShadow="0px 2px 8px rgba(0, 0, 0, 0.1)"  // Subtle shadow
+        spacing={2}
+        bgcolor="#ffffff"
+        borderRadius={8}
+        boxShadow="0px 4px 8px rgba(0, 0, 0, 0.1)"
       >
         <Stack
           direction="column"
@@ -95,6 +103,7 @@ export default function Home() {
           flexGrow={1}
           overflow="auto"
           maxHeight="100%"
+          id="chat-container"
         >
           {messages.map((message, index) => (
             <Box
@@ -103,18 +112,21 @@ export default function Home() {
               justifyContent={message.role === "assistant" ? "flex-start" : "flex-end"}
             >
               <Box
-                bgcolor={message.role === "assistant" ? "#e0f7fa" : "#cfd8dc"}  // Soft colors
-                color="#000"  // Dark text color
-                borderRadius={4}  // Less rounded corners
+                bgcolor={message.role === "assistant" ? "#007bff" : "#28a745"}
+                color="white"
+                borderRadius={16}
                 p={2}
-                maxWidth="70%"  // Limit width for better readability
-                wordBreak="break-word"  // Handle long words gracefully
+                maxWidth="80%"
+                sx={{
+                  wordBreak: "break-word",
+                  boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+                }}
               >
                 {message.content}
               </Box>
             </Box>
           ))}
-          <div ref={messagesEndRef} />  // Scroll reference
+          <div ref={chatEndRef} />
         </Stack>
 
         <Stack direction="row" spacing={2} alignItems="center">
@@ -123,17 +135,18 @@ export default function Home() {
             fullWidth
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            size="small"
+            sx={{ bgcolor: "#f9f9f9" }}
           />
           <Button
             variant="contained"
             onClick={sendMessage}
             sx={{
-              bgcolor: '#00796b',  // Teal color for button
+              bgcolor: '#007bff',
               color: 'white',
               '&:hover': {
-                bgcolor: '#004d40',  // Darker teal on hover
+                bgcolor: '#0056b3',
               },
+              borderRadius: 16,
             }}
           >
             SEND
