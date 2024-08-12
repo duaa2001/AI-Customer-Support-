@@ -11,57 +11,52 @@ export default function Home() {
   ]);
 
   const [message, setMessage] = useState("");
-  const chatEndRef = useRef(null);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const messagesEndRef = useRef(null);
 
   const sendMessage = async () => {
-    setMessages((messages) => [
-      ...messages,
+    if (!message.trim()) return; // Prevent sending empty messages
+    setMessage("");
+    setMessages((prevMessages) => [
+      ...prevMessages,
       { role: "user", content: message },
       { role: "assistant", content: "" },
     ]);
-    setMessage("");
 
-    try {
-      const response = await fetch("api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify([...messages, { role: "user", content: message }]),
+    const response = await fetch("api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([...messages, { role: "user", content: message }]),
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    let result = "";
+    reader.read().then(function processText({ done, value }) {
+      if (done) {
+        return;
+      }
+      const text = decoder.decode(value || new Uint8Array(), { stream: true });
+      setMessages((prevMessages) => {
+        let lastMessage = prevMessages[prevMessages.length - 1];
+        let otherMessages = prevMessages.slice(0, prevMessages.length - 1);
+        return [
+          ...otherMessages,
+          {
+            ...lastMessage,
+            content: lastMessage.content + text,
+          },
+        ];
       });
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      let result = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        result += decoder.decode(value || new Uint8Array());
-        setMessages((messages) => {
-          const lastMessage = messages[messages.length - 1];
-          const otherMessages = messages.slice(0, messages.length - 1);
-          return [
-            ...otherMessages,
-            {
-              ...lastMessage,
-              content: lastMessage.content + result,
-            },
-          ];
-        });
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
+    });
   };
+
+  // Scroll to the bottom of the chat on new message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   return (
     <Box
@@ -71,31 +66,28 @@ export default function Home() {
       flexDirection="column"
       justifyContent="center"
       alignItems="center"
-      bgcolor="#f4f4f9"
+      bgcolor="#f0f0f0"  // Light background color
     >
       <Typography
         variant="h4"
-        color="#333"
+        color="#333"  // Darker text color
         mb={4}
         fontWeight="bold"
         textAlign="center"
-        sx={{
-          textShadow: '1px 1px 2px rgba(0, 0, 0, 0.1)',
-        }}
       >
         Welcome to our Latest Chatbot!
       </Typography>
 
       <Stack
         direction="column"
-        width="400px"
+        width="500px"
         height="600px"
-        border="1px solid #ddd"
+        border="1px solid #ddd"  // Lighter border color
         p={2}
-        spacing={2}
-        bgcolor="#ffffff"
-        borderRadius={8}
-        boxShadow="0px 4px 8px rgba(0, 0, 0, 0.1)"
+        spacing={3}
+        bgcolor="white"
+        borderRadius={4}  // Less rounded corners
+        boxShadow="0px 2px 8px rgba(0, 0, 0, 0.1)"  // Subtle shadow
       >
         <Stack
           direction="column"
@@ -103,7 +95,6 @@ export default function Home() {
           flexGrow={1}
           overflow="auto"
           maxHeight="100%"
-          id="chat-container"
         >
           {messages.map((message, index) => (
             <Box
@@ -112,21 +103,18 @@ export default function Home() {
               justifyContent={message.role === "assistant" ? "flex-start" : "flex-end"}
             >
               <Box
-                bgcolor={message.role === "assistant" ? "#007bff" : "#28a745"}
-                color="white"
-                borderRadius={16}
+                bgcolor={message.role === "assistant" ? "#e0f7fa" : "#cfd8dc"}  // Soft colors
+                color="#000"  // Dark text color
+                borderRadius={4}  // Less rounded corners
                 p={2}
-                maxWidth="80%"
-                sx={{
-                  wordBreak: "break-word",
-                  boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
-                }}
+                maxWidth="70%"  // Limit width for better readability
+                wordBreak="break-word"  // Handle long words gracefully
               >
                 {message.content}
               </Box>
             </Box>
           ))}
-          <div ref={chatEndRef} />
+          <div ref={messagesEndRef} />  // Scroll reference
         </Stack>
 
         <Stack direction="row" spacing={2} alignItems="center">
@@ -135,18 +123,17 @@ export default function Home() {
             fullWidth
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            sx={{ bgcolor: "#f9f9f9" }}
+            size="small"
           />
           <Button
             variant="contained"
             onClick={sendMessage}
             sx={{
-              bgcolor: '#007bff',
+              bgcolor: '#00796b',  // Teal color for button
               color: 'white',
               '&:hover': {
-                bgcolor: '#0056b3',
+                bgcolor: '#004d40',  // Darker teal on hover
               },
-              borderRadius: 16,
             }}
           >
             SEND
