@@ -22,35 +22,43 @@ export default function Home() {
       { role: "assistant", content: "" },
     ]);
 
-    const response = await fetch("api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify([...messages, { role: "user", content: message }]),
-    });
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    let result = "";
-    reader.read().then(function processText({ done, value }) {
-      if (done) {
-        return;
-      }
-      const text = decoder.decode(value || new Uint8Array(), { stream: true });
-      setMessages((prevMessages) => {
-        let lastMessage = prevMessages[prevMessages.length - 1];
-        let otherMessages = prevMessages.slice(0, prevMessages.length - 1);
-        return [
-          ...otherMessages,
-          {
-            ...lastMessage,
-            content: lastMessage.content + text,
-          },
-        ];
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([...messages, { role: "user", content: message }]),
       });
-    });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let result = "";
+      reader.read().then(function processText({ done, value }) {
+        if (done) {
+          return;
+        }
+        const text = decoder.decode(value || new Uint8Array(), { stream: true });
+        setMessages((prevMessages) => {
+          let lastMessage = prevMessages[prevMessages.length - 1];
+          let otherMessages = prevMessages.slice(0, prevMessages.length - 1);
+          return [
+            ...otherMessages,
+            {
+              ...lastMessage,
+              content: lastMessage.content + text,
+            },
+          ];
+        });
+      });
+    } catch (error) {
+      console.error("Error extracting text:", error);
+    }
   };
 
   // Scroll to the bottom of the chat on new message
@@ -114,7 +122,9 @@ export default function Home() {
               </Box>
             </Box>
           ))}
-          <div ref={messagesEndRef} />  // Scroll reference
+      
+          <div ref={messagesEndRef} />  {/* Scroll reference */}
+
         </Stack>
 
         <Stack direction="row" spacing={2} alignItems="center">
