@@ -29,6 +29,12 @@ yarn-error.log*
 .env*.local
 .env*
 
+# Ignore JSON files containing text chunks
+textchunks.json
+
+# Ignore other specific JSON files
+*.json
+
 # vercel
 .vercel
 
